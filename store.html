@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vyrionyx Rank Shop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://i.imgur.com/IaUrttj.png');
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #00eaff;
+            text-shadow: 0 0 10px #00eaff;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .card {
+            background: rgba(0,0,0,0.65);
+            border-left: 5px solid lime;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px black;
+        }
+
+        .card h2 {
+            margin: 0;
+        }
+
+        .benefit {
+            text-align: left;
+            margin-top: 10px;
+            font-size: 14px;
+            line-height: 20px;
+        }
+
+        button {
+            background: lime;
+            border: none;
+            padding: 8px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: green;
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vyrionyx Rank Shop</h1>
+        <p>Upgrade rank & dapetin fitur spesial di server!</p>
+    </div>
+
+    <div class="container">
+
+        <script>
+            const waNumber = "081327241025";
+            function orderRank(rank, price){
+                const text = `Halo bang, saya mau beli rank *${rank}*.\nHarga: Rp ${price}\nUsername MC: `;
+                const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+                window.open(url, '_blank');
+            }
+        </script>
+
+        <!-- VIP -->
+        <div class="card" style="border-left-color: #00ff00;">
+            <h2>VIP – Rp 10.000</h2>
+            <div class="benefit">
+                ✔ /hat<br>
+                ✔ /tpa /tpahere<br>
+                ✔ Prefix VIP<br>
+                ✔ Akses warp VIP<br>
+            </div>
+            <button onclick="orderRank('VIP','10.000')">Beli VIP</button>
+        </div>
+
+        <!-- MVP -->
+        <div class="card" style="border-left-color: #00b7ff;">
+            <h2>MVP – Rp 20.000</h2>
+            <div class="benefit">
+                ✔ Semua benefit VIP<br>
+                ✔ /fly (area tertentu)<br>
+                ✔ /heal 30 detik<br>
+                ✔ Bonus uang harian<br>
+            </div>
+            <button onclick="orderRank('MVP','20.000')">Beli MVP</button>
+        </div>
+
+        <!-- ELITE -->
+        <div class="card" style="border-left-color: #e68cff;">
+            <h2>ELITE – Rp 30.000</h2>
+            <div class="benefit">
+                ✔ Semua benefit MVP<br>
+                ✔ /repair<br>
+                ✔ Slot homes +3<br>
+                ✔ Prefix ELITE glowing<br>
+            </div>
+            <button onclick="orderRank('ELITE','30.000')">Beli ELITE</button>
+        </div>
+
+        <!-- LEGEND -->
+        <div class="card" style="border-left-color: #ffcc00;">
+            <h2>LEGEND – Rp 40.000</h2>
+            <div class="benefit">
+                ✔ Semua benefit ELITE<br>
+                ✔ /nick<br>
+                ✔ /craft /anvil<br>
+                ✔ Akses area LEGEND<br>
+            </div>
+            <button onclick="orderRank('LEGEND','40.000')">Beli LEGEND</button>
+        </div>
+
+        <!-- TITAN -->
+        <div class="card" style="border-left-color: #ff5e5e;">
+            <h2>TITAN – Rp 50.000</h2>
+            <div class="benefit">
+                ✔ Semua benefit LEGEND<br>
+                ✔ /god (on/off)<br>
+                ✔ Fly full world<br>
+                ✔ 2x farm XP rate<br>
+            </div>
+            <button onclick="orderRank('TITAN','50.000')">Beli TITAN</button>
+        </div>
+
+        <!-- GOD -->
+        <div class="card" style="border-left-color: #ff00ff;">
+            <h2>GOD – Rp 60.000</h2>
+            <div class="benefit">
+                ✔ Semua benefit TITAN<br>
+                ✔ /vanish<br>
+                ✔ /ec (enderchest)<br>
+                ✔ Rank tertinggi, akses full VIP area<br>
+            </div>
+            <button onclick="orderRank('GOD','60.000')">Beli GOD</button>
+        </div>
+
+    </div>
+</body>
+</html>
