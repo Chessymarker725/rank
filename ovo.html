@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fahmi Wallet – Premium E-Wallet</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  body { background: linear-gradient(135deg,#0a192f,#112240,#0d7377); min-height:100vh; margin:0; font-family:'Inter',sans-serif; }
+  .glass{background:rgba(255,255,255,0.06);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.1);}
+  .fade{animation:fade 0.3s ease-out;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+<!-- LOGIN CARD -->
+<div id="loginCard" class="glass w-full max-w-sm p-6 rounded-2xl shadow-xl text-white text-center fade">
+  <h1 class="text-3xl font-bold mb-2">Fahmi Wallet</h1>
+  <p class="text-xs opacity-60 mb-5">Masuk pakai nomor kamu</p>
+  <input id="loginNumber" placeholder="Contoh: 62812345678"
+    class="w-full bg-white/10 p-3 rounded-xl outline-none placeholder-white/40 mb-4 text-center"/>
+  <button onclick="sendOTP()" class="w-full bg-cyan-400 hover:opacity-90 p-3 rounded-xl text-black font-semibold">
+    Kirim OTP
+  </button>
+
+  <div id="verifySection" class="hidden mt-4 fade">
+    <input id="otpInput" placeholder="Masukkan OTP"
+      class="w-full bg-white/10 p-3 rounded-xl outline-none placeholder-white/40 mb-3 text-center"/>
+    <button onclick="verifyOTP()" class="w-full bg-teal-400 hover:opacity-90 p-3 rounded-xl text-black font-semibold">
+      Verifikasi
+    </button>
+  </div>
+</div>
+
+<!-- DASHBOARD (hidden sebelum login) -->
+<div id="appSection" class="hidden w-full max-w-sm text-white fade">
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-4 px-1">
+    <div class="text-left">
+      <h2 class="text-lg font-bold">Halo, <span id="userLabel">-</span></h2>
+      <p class="text-[10px] opacity-50">Smart Premium Wallet</p>
+    </div>
+    <button onclick="logout()" class="opacity-60 hover:opacity-100 text-sm">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+  </div>
+
+  <!-- SALDO -->
+  <div class="glass p-5 rounded-2xl mb-4 text-left">
+    <p class="text-[10px] opacity-50">Total Saldo</p>
+    <h3 class="text-5xl font-extrabold">Rp <span id="saldoValue">0</span></h3>
+  </div>
+
+  <!-- QRIS MOCK -->
+  <div class="glass p-4 rounded-2xl text-center mb-4">
+    <p class="text-[10px] opacity-50 mb-2">QRIS Kamu (Random)</p>
+    <div class="flex justify-center">
+      <img id="qrisImage" class="w-40 h-40 rounded-xl shadow-lg"/>
+    </div>
+    <p class="text-xs opacity-60 mt-2">*QRIS mock, berubah tiap login</p>
+  </div>
+
+  <!-- MENU -->
+  <div class="grid grid-cols-3 gap-3 text-center mb-4">
+    <button onclick="openSend()" class="glass p-3 rounded-xl"><i class="fa-solid fa-paper-plane text-2xl mb-1"></i><p class="text-[9px] opacity-70">Kirim</p></button>
+    <button onclick="openHistory()" class="glass p-3 rounded-xl"><i class="fa-solid fa-clock text-2xl mb-1"></i><p class="text-[9px] opacity-70">Riwayat</p></button>
+    <button onclick="openHistory()" class="glass p-3 rounded-xl"><i class="fa-solid fa-receipt text-2xl mb-1"></i><p class="text-[9px] opacity-70">Cek Transaksi</p></button>
+  </div>
+
+  <!-- TAB HOME -->
+  <div id="homeTab" class="fade mt-4">
+    <div class="glass p-4 rounded-2xl text-center">
+      <i class="fa-solid fa-wallet text-4xl mb-2 opacity-60"></i><br/>
+      <p class="text-xs opacity-70">Selamat datang di <b>Fahmi Wallet</b></p>
+    </div>
+  </div>
+
+  <!-- TAB HISTORY -->
+  <div id="historyTab" class="hidden glass p-4 rounded-2xl mt-4 text-left">
+    <h4 class="font-bold mb-2 text-sm opacity-80">Riwayat Transaksi</h4>
+    <div id="historyList" class="max-h-52 overflow-auto text-xs space-y-2"></div>
+  </div>
+</div>
+
+<!-- MODAL SEND -->
+<div id="sendModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 fade">
+  <div class="glass w-full max-w-sm p-5 rounded-2xl text-white">
+    <h2 class="text-xl font-bold mb-1 text-center">Kirim Saldo</h2>
+    <p class="text-xs opacity-60 mb-4 text-center">Kirim ke nomor lain</p>
+    <input id="sendTo" placeholder="Nomor tujuan"
+      class="w-full bg-white/10 p-3 rounded-xl outline-none placeholder-white/40 mb-3 text-center"/>
+    <input id="sendAmount" type="number" placeholder="Nominal"
+      class="w-full bg-white/10 p-3 rounded-xl outline-none placeholder-white/40 mb-4 text-center"/>
+    <div class="space-y-2">
+      <button onclick="sendSaldo()" class="w-full bg-gradient-to-r from-cyan-300 to-teal-300 hover:opacity-90 p-3 rounded-xl text-black font-semibold">Kirim Sekarang</button>
+      <button onclick="closeSend()" class="w-full bg-red-500/70 hover:bg-red-600 p-2 rounded-xl text-bold text-sm">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TOP UP -->
+<div id="topupModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 fade">
+  <div class="glass w-full max-w-sm p-5 rounded-2xl text-white">
+    <h2 class="text-xl font-bold mb-1 text-center">Top Up Saldo</h2>
+    <p class="text-xs opacity-60 mb-4 text-center">Masukkan nominal top up</p>
+    <input id="topupInput" type="number" placeholder="Contoh: 950000"
+      class="w-full bg-white/10 p-3 rounded-xl outline-none placeholder-white/40 mb-4 text-center"/>
+    <div class="space-y-2">
+      <button onclick="topupNow()" class="w-full bg-green-400 hover:opacity-90 p-3 rounded-xl text-black font-semibold">Top Up Sekarang</button>
+      <button onclick="closeTopup()" class="w-full bg-red-500/70 hover:bg-red-600 p-2 rounded-xl text-bold text-sm">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOMBOL + -->
+<button onclick="openTopup()" class="fixed bottom-5 right-5 bg-cyan-400 text-black w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl hover:opacity-90">
+  <i class="fa-solid fa-plus"></i>
+</button>
+
+<script>
+let generatedOTP = "";
+let currentUser = null;
+
+function formatRupiah(num){
+  return Number(num).toLocaleString("id-ID",{minimumFractionDigits:2}).replace(/,/g, ".");
+}
+
+// LOGIN LOGIC
+function sendOTP(){
+  const num = loginNumber.value.trim();
+  if(!num) return alert("Nomor wajib diisi!");
+  generatedOTP = Math.floor(1000 + Math.random()*9000).toString();
+  alert("🔐 OTP Kamu: " + generatedOTP);
+  verifySection.classList.remove("hidden");
+}
+
+function verifyOTP(){
+  const num = loginNumber.value.trim();
+  if(otpInput.value.trim() === generatedOTP){
+    currentUser = num;
+    localStorage.setItem("user", num);
+    if(!localStorage.getItem("saldo_" + num)) localStorage.setItem("saldo_" + num, "0");
+    showDashboard(num);
+  } else {
+    alert("OTP salah!");
+  }
+}
+
+// Dashboard
+function showDashboard(num){
+  currentUser = num;
+  loginCard.style.display = "none";
+  appSection.classList.remove("hidden");
+  userLabel.textContent = num;
+  const saldo = localStorage.getItem("saldo_" + num) || "0";
+  saldoValue.textContent = formatRupiah(parseInt(saldo));
+  generateRandomQR();
+  updateHistory();
+}
+
+// QRIS RANDOM MOCK
+function generateRandomQR(){
+  const seed = Math.random().toString(36).substring(2,8);
+  qrisImage.src = "https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=FahmiMockQR_" + seed;
+}
+
+// MODAL SEND
+function openSend(){ sendModal.classList.remove("hidden"); sendModal.classList.add("flex"); }
+function closeSend(){ sendModal.classList.add("hidden"); }
+
+function sendSaldo(){
+  const to = sendTo.value.trim();
+  const amt = parseInt(sendAmount.value);
+  if(!to) return alert("Nomor tujuan wajib!");
+  if(!localStorage.getItem("saldo_" + to)) return alert("⚠ Nomor belum pernah terdaftar/login!");
+  if(!amt || amt<=0) return alert("Nominal salah!");
+  let saldo = parseInt(localStorage.getItem("saldo_" + currentUser));
+  if(amt > saldo) return alert("Saldo kurang!");
+  saldo -= amt;
+  localStorage.setItem("saldo_" + currentUser,saldo);
+  saldoValue.textContent = formatRupiah(saldo);
+  let rSaldo = parseInt(localStorage.getItem("saldo_" + to));
+  rSaldo += amt;
+  localStorage.setItem("saldo_" + to,rSaldo);
+  addHistory(`Kirim saldo: -Rp ${formatRupiah(amt)} ke ${to}`);
+  alert("✅ Saldo terkirim!");
+  closeSend();
+}
+
+// MODAL TOPUP
+function openTopup(){ topupModal.classList.remove("hidden"); topupModal.classList.add("flex"); }
+function closeTopup(){ topupModal.classList.add("hidden"); }
+
+function topupNow(){
+  const v = parseInt(topupInput.value);
+  if(v<=0||isNaN(v)) return alert("Nominal salah!");
+  let s = parseInt(localStorage.getItem("saldo_" + currentUser));
+  s += v;
+  localStorage.setItem("saldo_" + currentUser,s);
+  saldoValue.textContent = formatRupiah(s);
+  addHistory(`Top Up saldo: +Rp ${formatRupiah(v)}`);
+  alert("🔥 Top up berhasil!");
+  closeTopup();
+}
+
+// HISTORY
+function addHistory(text){
+  const hist = JSON.parse(localStorage.getItem("history_" + currentUser)||"[]");
+  hist.unshift({text,time:new Date().toLocaleTimeString()});
+  localStorage.setItem("history_" + currentUser,JSON.stringify(hist));
+  updateHistory();
+}
+function updateHistory(){
+  historyList.innerHTML="";
+  const hist = JSON.parse(localStorage.getItem("history_"+currentUser)||"[]");
+  hist.forEach(h=>{ historyList.innerHTML+=`<div class="bg-white/10 p-2 rounded-xl flex justify-between"><span>${h.text}</span><span class="opacity-40">${h.time}</span></div>`});
+}
+function openHistory(){ homeTab.classList.add("hidden"); historyTab.classList.remove("hidden"); }
+
+// LOGOUT
+function logout(){ localStorage.removeItem("user"); location.reload(); }
+
+// PROTECT STARTUP
+const savedUser = localStorage.getItem("user");
+if(savedUser){ showDashboard(savedUser); }
+</script>
+
+</body>
+</html>
