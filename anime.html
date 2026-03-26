@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyrionix Anime List</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: url("miku.jpg") no-repeat center center;
+    background-size: cover;
+    color: white;
+}
+
+/* overlay */
+.overlay {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    min-height: 100vh;
+}
+
+/* navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 50px;
+}
+
+.logo {
+    font-size: 26px;
+    font-weight: bold;
+    color: #00ccff;
+    text-shadow: 0 0 15px #00ccff;
+}
+
+.menu a {
+    margin-left: 20px;
+    color: white;
+    text-decoration: none;
+}
+
+.menu a:hover {
+    color: #00ccff;
+}
+
+/* title */
+.title {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.title h1 {
+    font-size: 50px;
+    text-shadow: 0 0 20px #00ccff;
+}
+
+.title p {
+    opacity: 0.7;
+}
+
+/* tombol WA */
+.wa-btn {
+    margin-top: 15px;
+    padding: 12px 30px;
+    border-radius: 30px;
+    border: none;
+    background: #25D366;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #25D366;
+    transition: 0.3s;
+}
+
+.wa-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px #25D366;
+}
+
+/* grid anime */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    padding: 30px 50px;
+}
+
+/* card */
+.card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px #00ccff;
+}
+
+.card img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.card h3 {
+    padding: 10px;
+    font-size: 18px;
+}
+
+.card p {
+    padding: 0 10px 15px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* footer */
+.footer {
+    text-align: center;
+    padding: 20px;
+    opacity: 0.6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay">
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">Vyrionix</div>
+    <div class="menu">
+        <a href="#">Home</a>
+        <a href="#">Top Anime</a>
+        <a href="#">About</a>
+    </div>
+</div>
+
+<!-- TITLE -->
+<div class="title">
+    <h1>List Anime by Vyrionix 🔥</h1>
+    <p>Owned by Fahmi 💙</p>
+
+    <a href="https://wa.me/6281327241025" target="_blank">
+        <button class="wa-btn">Chat Owner 💬</button>
+    </a>
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/3/40451.jpg">
+<h3>#1 JoJo's Bizarre Adventure</h3>
+<p>Stand power, style unik, legenda 😈</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/10/47347.jpg">
+<h3>#2 Attack on Titan</h3>
+<p>Epic story, dark, plot gila.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1286/99889.jpg">
+<h3>#3 Demon Slayer</h3>
+<p>Visual terbaik + fight keren.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1171/109222.jpg">
+<h3>#4 Jujutsu Kaisen</h3>
+<p>Action + karakter OP.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/5/73199.jpg">
+<h3>#5 Death Note</h3>
+<p>Mind game terbaik.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1223/96541.jpg">
+<h3>#6 Tokyo Revengers</h3>
+<p>Time travel + gang vibes.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1764/126627.jpg">
+<h3>#7 Chainsaw Man</h3>
+<p>Brutal + unik.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1935/127974.jpg">
+<h3>#8 Blue Lock</h3>
+<p>Sepak bola tapi egois 🔥</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/3/72078.jpg">
+<h3>#9 One Punch Man</h3>
+<p>Overpowered + lucu.</p>
+</div>
+
+<div class="card">
+<img src="https://cdn.myanimelist.net/images/anime/1208/94745.jpg">
+<h3>#10 One Piece</h3>
+<p>Petualangan tanpa akhir.</p>
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+© 2026 Vyrionix — Owner Fahmi 💙
+</div>
+
+</div>
+
+<!-- SOUND (kalem) -->
+<audio autoplay loop>
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8e5c6d0f4.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
+</audio>
+
+</body>
+</html>
