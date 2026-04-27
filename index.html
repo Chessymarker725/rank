@@ -2,221 +2,185 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Vyrion Music</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyrionyx Store</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
-
-body{
-  height:100vh;
-  display:flex;
-  background:#0b0b0f;
-  color:white;
-  overflow:hidden;
-}
-
-/* SIDEBAR */
-.sidebar{
-  width:220px;
-  background:#000;
-  padding:20px;
-}
-
-.logo{
-  font-size:22px;
-  color:cyan;
-  margin-bottom:20px;
-}
-
-.menu div{
-  padding:10px;
-  cursor:pointer;
-  opacity:0.7;
-}
-.menu div:hover{opacity:1}
-
-/* MAIN */
-.main{
-  flex:1;
-  padding:20px;
-  overflow:auto;
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle at top, #1a0000, #000);
+  color: white;
+  text-align: center;
 }
 
 /* HEADER */
-.header{
-  font-size:24px;
-  margin-bottom:20px;
+.header {
+  padding: 40px 20px;
+}
+
+.title {
+  font-size: 50px;
+  font-weight: 600;
+  background: linear-gradient(90deg,#ff3b3b,#ff66cc,#ffcc66);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: #ccc;
+}
+
+.ip {
+  margin-top: 10px;
+  color: #ffcc66;
+  font-weight: bold;
 }
 
 /* GRID */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-  gap:15px;
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
+  gap: 25px;
+  padding: 40px;
 }
 
-.card{
-  background:#111;
-  padding:10px;
-  border-radius:15px;
-  cursor:pointer;
-  transition:0.3s;
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 25px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(255,0,0,0.3);
+  transition: 0.3s;
 }
 
-.card:hover{
-  transform:scale(1.05);
-  background:#1a1a1a;
+.card:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 0 40px rgba(255,0,0,0.7);
 }
 
-.card img{
-  width:100%;
-  border-radius:10px;
+/* TEXT */
+.rank {
+  font-size: 24px;
+  margin-bottom: 10px;
 }
 
-/* PLAYER BAR */
-.player{
-  position:fixed;
-  bottom:0;
-  left:220px;
-  right:0;
-  height:80px;
-  background:#111;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px 20px;
-  border-top:1px solid #222;
+.price {
+  color: #ffcc66;
+  margin-bottom: 15px;
 }
 
-.now{
-  display:flex;
-  align-items:center;
+/* BUTTON */
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg,#ff3b3b,#ff66cc);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-.now img{
-  width:50px;
-  border-radius:5px;
-  margin-right:10px;
+button:hover {
+  opacity: 0.8;
 }
 
-.controls button{
-  margin:0 5px;
-  padding:8px;
-  border:none;
-  border-radius:50%;
-  background:#222;
-  color:white;
-  cursor:pointer;
+/* MODAL */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  justify-content: center;
+  align-items: center;
 }
 
-.controls button:hover{
-  background:cyan;
-  color:black;
+.modal-content {
+  background: #111;
+  padding: 30px;
+  border-radius: 15px;
+  width: 300px;
 }
 
-.progress{
-  width:300px;
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="logo">🎧 Vyrion</div>
-  <div class="menu">
-    <div>Home</div>
-    <div>Library</div>
-    <div>Playlist</div>
-  </div>
+<div class="header">
+  <div class="title">Vyrionyx Store</div>
+  <div class="subtitle">Premium Minecraft Rank Shop</div>
+  <div class="ip">IP: Play.vyrionyx.biz.id</div>
 </div>
 
-<!-- MAIN -->
-<div class="main">
-  <div class="header">Trending Music</div>
+<div class="container" id="shop"></div>
 
-  <div class="grid" id="grid"></div>
-</div>
-
-<!-- PLAYER -->
-<div class="player">
-  <div class="now">
-    <img id="cover" src="cover1.jpg">
-    <div>
-      <div id="title">Hotel Room</div>
-    </div>
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3 id="rankName"></h3>
+    <input type="text" id="username" placeholder="Masukkan username">
+    <br><br>
+    <button onclick="confirmBuy()">Lanjut ke WhatsApp</button>
   </div>
-
-  <div class="controls">
-    <button onclick="prev()">⏮</button>
-    <button onclick="playPause()">▶</button>
-    <button onclick="next()">⏭</button>
-  </div>
-
-  <input type="range" id="progress" class="progress">
 </div>
-
-<audio id="audio"></audio>
 
 <script>
-const songs=[
-{title:"Hotel Room",file:"music1.mp3",cover:"cover1.jpg"},
-{title:"Love Nwantiti",file:"music2.mp3",cover:"cover2.jpg"},
-{title:"People",file:"music3.mp3",cover:"cover3.jpg"},
-{title:"Terminator",file:"music4.mp3",cover:"cover4.jpg"},
-{title:"Moonlight",file:"music5.mp3",cover:"cover5.jpg"}
+const ranks = [
+  "Survivor","Explorer","Warrior","Knight",
+  "Legend","Mythic","Glory","Imortal"
 ];
 
-let index=0;
-const audio=document.getElementById("audio");
+let selectedRank = "";
+let selectedPrice = 0;
 
-function loadSong(i){
-index=i;
-audio.src=songs[i].file;
-cover.src=songs[i].cover;
-title.innerText=songs[i].title;
-}
+const shop = document.getElementById("shop");
 
-function playPause(){
-audio.paused?audio.play():audio.pause();
-}
+ranks.forEach((rank, i) => {
+  let price = (i+1)*10000;
 
-function next(){
-index=(index+1)%songs.length;
-loadSong(index);
-audio.play();
-}
+  let card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="rank">${rank}</div>
+    <div class="price">Rp ${price.toLocaleString()}</div>
+    <button onclick="openModal('${rank}', ${price})">Beli</button>
+  `;
 
-function prev(){
-index=(index-1+songs.length)%songs.length;
-loadSong(index);
-audio.play();
-}
-
-/* GRID */
-songs.forEach((s,i)=>{
-let div=document.createElement("div");
-div.className="card";
-div.innerHTML=`
-<img src="${s.cover}">
-<div>${s.title}</div>
-`;
-div.onclick=()=>{loadSong(i);audio.play();}
-document.getElementById("grid").appendChild(div);
+  shop.appendChild(card);
 });
 
-/* PROGRESS */
-audio.addEventListener("timeupdate",()=>{
-progress.value=(audio.currentTime/audio.duration)*100||0;
-});
+function openModal(rank, price) {
+  selectedRank = rank;
+  selectedPrice = price;
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("rankName").innerText = rank;
+}
 
-progress.oninput=()=>{
-audio.currentTime=(progress.value/100)*audio.duration;
-};
+function confirmBuy() {
+  let user = document.getElementById("username").value;
+  if (!user) return alert("Masukkan username dulu!");
 
-loadSong(0);
+  let msg = `Halo admin Vyrionyx,%0ASaya mau beli rank ${selectedRank}%0AUsername: ${user}%0AHarga: Rp ${selectedPrice}`;
+  let wa = `https://wa.me/628139470745?text=${msg}`;
+
+  window.open(wa, "_blank");
+}
 </script>
 
 </body>
