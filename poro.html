@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XXX HUB - Hot Indonesia</title>
+  <style>
+    body { margin: 0; padding: 0; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    header {
+      background: linear-gradient(90deg, #ff0000, #ff00aa); padding: 20px; text-align: center;
+    }
+    .nav { background: #111; padding: 12px; text-align: center; }
+    .nav a { color: #ff00aa; margin: 0 20px; text-decoration: none; font-weight: bold; }
+    
+    .container { max-width: 1300px; margin: 20px auto; }
+    .video-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 10px;
+    }
+    .card {
+      background: #1a1a1a; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s;
+    }
+    .card:hover { transform: scale(1.06); box-shadow: 0 0 15px rgba(255,0,170,0.6); }
+    .card img { width: 100%; height: 190px; object-fit: cover; }
+    .card-info { padding: 12px; }
+    .card-info h3 { margin: 0 0 8px 0; font-size: 16px; }
+
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-content {
+      width: 90%; max-width: 1000px; background: #000; padding: 10px; border-radius: 10px;
+    }
+    video { width: 100%; max-height: 80vh; }
+    .close {
+      position: absolute; top: 15px; right: 25px; font-size: 40px; cursor: pointer; color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔥 XXX HUB INDONESIA 🔥</h1>
+    <p>Video Panas Terbaru - 18+ Only</p>
+  </header>
+
+  <div class="nav">
+    <a href="#">Home</a>
+    <a href="#">Kategori</a>
+    <a href="#">Live</a>
+    <a href="#">Upload</a>
+  </div>
+
+  <div class="container">
+    <h2>Trending Sekarang</h2>
+    <div class="video-grid" id="videoGrid"></div>
+  </div>
+
+  <!-- Video Player -->
+  <div class="modal" id="videoModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">×</span>
+      <video id="mainVideo" controls autoplay></video>
+    </div>
+  </div>
+
+  <script>
+    const videos = [
+      {
+        title: "Cewek Cantik Mandi Bareng Pacar",
+        video: "video1.mp4",
+        cover: "cover1.jpg",
+        views: "45K"
+      },
+      {
+        title: "MLBB Girl Cosplay Hot",
+        video: "video2.mp4",
+        cover: "cover2.jpg",
+        views: "89K"
+      },
+      {
+        title: "Pijat Plus-Plus Sampe Muncrat",
+        video: "video3.mp4",
+        cover: "cover3.jpg",
+        views: "120K"
+      },
+      {
+        title: "ABG SMP Colmek Squirt",
+        video: "video4.mp4",
+        cover: "cover4.jpg",
+        views: "210K"
+      }
+    ];
+
+    const grid = document.getElementById('videoGrid');
+    
+    videos.forEach(v => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="${v.cover}" alt="${v.title}">
+        <div class="card-info">
+          <h3>${v.title}</h3>
+          <p>${v.views} views • Baru</p>
+        </div>
+      `;
+      card.onclick = () => playVideo(v.video);
+      grid.appendChild(card);
+    });
+
+    function playVideo(videoSrc) {
+      const modal = document.getElementById('videoModal');
+      const video = document.getElementById('mainVideo');
+      video.src = videoSrc;
+      modal.style.display = 'flex';
+      video.play();
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('videoModal');
+      const video = document.getElementById('mainVideo');
+      video.pause();
+      video.src = '';
+      modal.style.display = 'none';
+    }
+
+    // Klik luar untuk tutup
+    document.getElementById('videoModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>
