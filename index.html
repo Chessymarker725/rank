@@ -1,187 +1,497 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vyrionyx Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIMINAL ARCHIVE - Level Selector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050b10;
+            --card-bg: rgba(10, 25, 35, 0.75);
+            --border-color: rgba(0, 255, 255, 0.3);
+            --accent-cyan: #00ffff;
+            --accent-yellow: #f1c40f;
+            --accent-red: #ff3366;
+            --text-main: #d0f0ff;
+            --text-dim: #688b94;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
 
-<style>
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: radial-gradient(circle at top, #1a0000, #000);
-  color: white;
-  text-align: center;
-}
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.05) 0%, transparent 80%),
+                linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.5) 50%);
+            background-size: 100% 100%, 100% 4px;
+        }
 
-/* HEADER */
-.header {
-  padding: 40px 20px;
-}
+        /* CRT Scanline & Vignette Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 100;
+        }
 
-.title {
-  font-size: 50px;
-  font-weight: 600;
-  background: linear-gradient(90deg,#ff3b3b,#ff66cc,#ffcc66);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            box-shadow: 0 0 150px rgba(0,0,0,0.95) inset;
+            z-index: 99;
+        }
 
-.subtitle {
-  margin-top: 10px;
-  color: #ccc;
-}
+        /* Fullscreen Intro Overlay */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #020508;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+        }
 
-.ip {
-  margin-top: 10px;
-  color: #ffcc66;
-  font-weight: bold;
-}
+        #intro-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
 
-/* GRID */
-.container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
-  gap: 25px;
-  padding: 40px;
-}
+        .terminal-box {
+            max-width: 650px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: rgba(4, 15, 22, 0.85);
+            padding: 40px 30px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            position: relative;
+        }
 
-/* CARD */
-.card {
-  background: rgba(255,255,255,0.05);
-  border-radius: 20px;
-  padding: 25px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(255,0,0,0.3);
-  transition: 0.3s;
-}
+        .terminal-box::before {
+            content: "SYSTEM_BOOT_SEQUENCE // RESTRICTED ACCESS";
+            position: absolute;
+            top: -12px; left: 20px;
+            background: #020508;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+        }
 
-.card:hover {
-  transform: translateY(-10px) scale(1.05);
-  box-shadow: 0 0 40px rgba(255,0,0,0.7);
-}
+        .intro-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 20px var(--accent-cyan);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
 
-/* TEXT */
-.rank {
-  font-size: 24px;
-  margin-bottom: 10px;
-}
+        .intro-sub {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+        }
 
-.price {
-  color: #ffcc66;
-  margin-bottom: 15px;
-}
+        .console-log {
+            text-align: left;
+            font-size: 0.8rem;
+            color: #688b94;
+            line-height: 1.8;
+            margin-bottom: 35px;
+            border-left: 2px solid var(--accent-cyan);
+            padding-left: 15px;
+        }
 
-/* BUTTON */
-button {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(90deg,#ff3b3b,#ff66cc);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
+        .console-log .highlight {
+            color: var(--accent-cyan);
+        }
 
-button:hover {
-  opacity: 0.8;
-}
+        .console-log .warning {
+            color: var(--accent-yellow);
+        }
 
-/* MODAL */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.8);
-  justify-content: center;
-  align-items: center;
-}
+        .start-btn {
+            padding: 16px 40px;
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            letter-spacing: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
 
-.modal-content {
-  background: #111;
-  padding: 30px;
-  border-radius: 15px;
-  width: 300px;
-}
+        .start-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            box-shadow: 0 0 30px var(--accent-cyan);
+        }
 
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: none;
-}
-</style>
+        /* Main Dashboard Header */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            padding: 40px 20px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        .title-group h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.8rem;
+            letter-spacing: 6px;
+            color: #fff;
+            text-shadow: 0 0 12px var(--accent-cyan);
+            text-transform: uppercase;
+        }
+
+        .title-group p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .system-status {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            line-height: 1.5;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-cyan);
+            animation: pulse 1.5s infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* Level Cards Layout */
+        .grid-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 20px 60px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+        }
+
+        .level-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            backdrop-filter: blur(4px);
+        }
+
+        .level-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.25);
+        }
+
+        .card-banner {
+            height: 180px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card-banner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 30%, var(--card-bg) 100%);
+        }
+
+        .bg-poolrooms { background: linear-gradient(135deg, #005f73, #0a9396, #94d2bd); }
+        .bg-lobby { background: linear-gradient(135deg, #ca6702, #bb3e03, #ae2012); }
+        .bg-pipe-dreams { background: linear-gradient(135deg, #2b2d42, #14213d, #000000); }
+        .bg-suburbia { background: linear-gradient(135deg, #3a5a40, #588157, #a3b18a); }
+
+        .threat-tag {
+            position: absolute;
+            top: 12px; right: 12px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 2px;
+            z-index: 2;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        .class-safe { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .class-habitable { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
+        .class-danger { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; }
+
+        .card-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-content h2 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.8rem;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .level-code {
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .card-content p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .launch-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .launch-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        .launch-btn:disabled {
+            border-color: #334e55;
+            color: #334e55;
+            cursor: not-allowed;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            width: 100%;
+        }
+    </style>
 </head>
-
 <body>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
 
-<div class="header">
-  <div class="title">Vyrionyx Store</div>
-  <div class="subtitle">Premium Minecraft Rank Shop</div>
-  <div class="ip">IP: Play.vyrionyx.biz.id</div>
-</div>
+    <!-- INTRO SCREEN OVERLAY -->
+    <div id="intro-overlay">
+        <div class="terminal-box">
+            <div class="intro-title">Welcome Traveler</div>
+            <div class="intro-sub">LIMINAL SPACE ARCHIVE SIMULATION</div>
+            
+            <div class="console-log">
+                > INITIALIZING NEURAL LINK... <span class="highlight">[OK]</span><br>
+                > CALIBRATING ENVIRONMENTAL RENDERING ENGINE... <span class="highlight">[OK]</span><br>
+                > <span class="warning">WARNING: NON-EUCLIDEAN SPATIAL ANOMALIES DETECTED</span><br>
+                > READY FOR LEVEL DEPLOYMENT.
+            </div>
 
-<div class="container" id="shop"></div>
+            <button class="start-btn" onclick="initializeSystem()">
+                [ INITIALIZE SYSTEM ]
+            </button>
+        </div>
+    </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h3 id="rankName"></h3>
-    <input type="text" id="username" placeholder="Masukkan username">
-    <br><br>
-    <button onclick="confirmBuy()">Lanjut ke WhatsApp</button>
-  </div>
-</div>
+    <!-- MAIN DASHBOARD -->
+    <header>
+        <div class="title-group">
+            <h1>The Backrooms</h1>
+            <p>LIMINAL SPACE ARCHIVE // SIMULATION ENGINE</p>
+        </div>
+        <div class="system-status">
+            <div><span class="status-dot"></span>ENGINE_ONLINE</div>
+            <div style="color: var(--text-dim);">BUILD v2.4.0</div>
+        </div>
+    </header>
 
-<script>
-const ranks = [
-  "Survivor","Explorer","Warrior","Knight",
-  "Legend","Mythic","Glory","Imortal"
-];
+    <main class="grid-container">
 
-let selectedRank = "";
-let selectedPrice = 0;
+        <!-- LEVEL: THE POOLROOMS -->
+        <article class="level-card">
+            <div class="card-banner bg-poolrooms">
+                <span class="threat-tag class-safe">CLASS 0 - SAFE</span>
+            </div>
+            <div class="card-content">
+                <h2>The Poolrooms</h2>
+                <div class="level-code">ARCHIVE_ID: LEVEL_37</div>
+                <p>An endless complex of white-tiled structures filled with warm, crystal-clear water. A serene yet unsettling atmosphere featuring shallow pools and deep abysses.</p>
+                <button class="launch-btn" onclick="loadLevel('poolrooms.html')">
+                    <span>►</span> Enter Simulation
+                </button>
+            </div>
+        </article>
 
-const shop = document.getElementById("shop");
+        <!-- LEVEL: THE LOBBY -->
+        <article class="level-card">
+            <div class="card-banner bg-lobby">
+                <span class="threat-tag class-habitable">CLASS 1 - MINIMAL</span>
+            </div>
+            <div class="card-content">
+                <h2>The Lobby</h2>
+                <div class="level-code">ARCHIVE_ID: LEVEL_00</div>
+                <p>An infinite expanse of non-linear rooms featuring damp carpet, monochrome yellow wallpaper, and the incessant hum of fluorescent lights.</p>
+                <button class="launch-btn" onclick="loadLevel('lobby.html')">
+                    <span>►</span> Enter Simulation
+                </button>
+            </div>
+        </article>
 
-ranks.forEach((rank, i) => {
-  let price = (i+1)*10000;
+        <!-- LEVEL: PIPE DREAMS -->
+        <article class="level-card">
+            <div class="card-banner bg-pipe-dreams">
+                <span class="threat-tag class-danger">CLASS 2 - UNSAFE</span>
+            </div>
+            <div class="card-content">
+                <h2>Pipe Dreams</h2>
+                <div class="level-code">ARCHIVE_ID: LEVEL_02</div>
+                <p>Narrow industrial concrete tunnels packed with high-pressure piping. Claustrophobic high-temperature environment with minimal visibility.</p>
+                <button class="launch-btn" disabled>
+                    🔒 LOCKED / IN DEV
+                </button>
+            </div>
+        </article>
 
-  let card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="rank">${rank}</div>
-    <div class="price">Rp ${price.toLocaleString()}</div>
-    <button onclick="openModal('${rank}', ${price})">Beli</button>
-  `;
+        <!-- LEVEL: MOTION -->
+        <article class="level-card">
+            <div class="card-banner bg-suburbia">
+                <span class="threat-tag class-safe">CLASS 0 - SAFE</span>
+            </div>
+            <div class="card-content">
+                <h2>Motion</h2>
+                <div class="level-code">ARCHIVE_ID: LEVEL_94</div>
+                <p>A surreal suburban settlement resembling a toy town under a silent, static sky, surrounded by completely empty, uninhabited houses.</p>
+                <button class="launch-btn" disabled>
+                    🔒 LOCKED / IN DEV
+                </button>
+            </div>
+        </article>
 
-  shop.appendChild(card);
-});
+    </main>
 
-function openModal(rank, price) {
-  selectedRank = rank;
-  selectedPrice = price;
-  document.getElementById("modal").style.display = "flex";
-  document.getElementById("rankName").innerText = rank;
-}
+    <footer>
+        PahmiGG Project &copy; 2026 — Liminal Space Experience Engine
+    </footer>
 
-function confirmBuy() {
-  let user = document.getElementById("username").value;
-  if (!user) return alert("Masukkan username dulu!");
+    <script>
+        function initializeSystem() {
+            playAudioPulse(220, 80, 0.4);
 
-  let msg = `Halo admin Vyrionyx,%0ASaya mau beli rank ${selectedRank}%0AUsername: ${user}%0AHarga: Rp ${selectedPrice}`;
-  let wa = `https://wa.me/628139470745?text=${msg}`;
+            const overlay = document.getElementById('intro-overlay');
+            overlay.classList.add('hidden');
+        }
 
-  window.open(wa, "_blank");
-}
-</script>
+        function playAudioPulse(startFreq, endFreq, duration) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
 
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
+
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                // Audio Context fallback if blocked by browser
+            }
+        }
+
+        function loadLevel(fileUrl) {
+            playAudioPulse(440, 110, 0.3);
+
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.4s ease';
+
+            setTimeout(() => {
+                window.location.href = fileUrl;
+            }, 350);
+        }
+    </script>
 </body>
 </html>

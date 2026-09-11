@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Backrooms - PahmiGG Project</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Courier New', Courier, monospace; 
+            background-color: #000;
+        }
+        #blocker {
+            position: absolute; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: #e8d695; text-shadow: 2px 2px 5px #000;
+            cursor: pointer; z-index: 10; text-align: center;
+        }
+        #instructions h1 { margin: 0; font-size: 36px; letter-spacing: 2px; }
+        #instructions p { font-size: 16px; color: #aaa; }
+        .credit { font-size: 14px; color: #666; margin-top: 30px; border-top: 1px solid #333; padding-top: 10px; }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 4px; height: 4px;
+            background-color: rgba(255,255,255,0.4);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 5;
+        }
+
+        /* Tampilan Dashboard */
+        #dashboard {
+            position: absolute; top: 15px; left: 15px;
+            color: #d1bf7b; font-size: 14px;
+            background: rgba(0, 0, 0, 0.4); padding: 15px;
+            border: 1px solid #d1bf7b; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            display: none; z-index: 5; pointer-events: none;
+        }
+        #dashboard .dash-title { font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #d1bf7b; padding-bottom: 4px; }
+        .credit-dash { font-size: 10px; color: #888; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <h1>THE BACKROOMS</h1>
+            <p>Klik di mana saja untuk masuk</p>
+            <p style="font-size: 12px;">[W A S D] Bergerak | [MOUSE] Melihat</p>
+            <div class="credit">A Game by <strong>PahmiGG project</strong></div>
+        </div>
+    </div>
+    
+    <div id="dashboard">
+        <div class="dash-title">SYSTEM_MONITOR</div>
+        <div>POS X: <span id="posX">0</span></div>
+        <div>POS Z: <span id="posZ">0</span></div>
+        <div>STATUS: L O S T</div>
+        <div class="credit-dash">© PahmiGG project</div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        let camera, scene, renderer, controls;
+        const walls = []; 
+        const generatedChunks = new Set(); 
+
+        // Variable Entity
+        let entity;
+        let isEntitySpawning = false;
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        const CELL_SIZE = 12, WALL_HEIGHT = 10, THICKNESS = 1.2, CHUNK_SIZE = 5, RENDER_DISTANCE = 2;
+        
+        // --- Sistem Audio Dengungan Neon ---
+        let audioCtx, humOscillator, humGain;
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            humOscillator = audioCtx.createOscillator();
+            humOscillator.type = 'sine';
+            humOscillator.frequency.setValueAtTime(60, audioCtx.currentTime);
+            
+            humGain = audioCtx.createGain();
+            humGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            
+            humOscillator.connect(humGain);
+            humGain.connect(audioCtx.destination);
+            humOscillator.start();
+        }
+
+        // --- Tekstur Canvas ---
+        function createWallTexture() {
+            const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 256;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = '#e8d695'; ctx.fillRect(0,0,256,256);
+            ctx.fillStyle = '#d1bf7b'; 
+            for(let i=0; i<256; i+=16) ctx.fillRect(i, 0, 3, 256);
+            for(let i=0; i<3000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(100,80,0,0.05)';
+                ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; return tex;
+        }
+
+        function createFloorTexture() {
+            const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 256;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = '#8a7b45'; ctx.fillRect(0,0,256,256);
+            for(let i=0; i<25000; i++) {
+                const val = Math.random();
+                ctx.fillStyle = val > 0.6 ? 'rgba(0,0,0,0.15)' : (val < 0.2 ? 'rgba(255,255,255,0.1)' : 'transparent');
+                ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; return tex;
+        }
+
+        function createCeilingTexture() {
+            const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 256;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = '#dcdcdc'; ctx.fillRect(0,0,256,256);
+            ctx.strokeStyle = '#999999'; ctx.lineWidth = 4; ctx.strokeRect(0,0,256,256);
+            if(Math.random() < 0.25) {
+                ctx.fillStyle = '#fffff0'; ctx.fillRect(10, 10, 236, 236);
+                ctx.shadowColor = '#ffffcc'; ctx.shadowBlur = 20;
+            }
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; return tex;
+        }
+
+        const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
+        const floorMat = new THREE.MeshLambertMaterial({ map: createFloorTexture() });
+        const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
+
+        init();
+        animate();
+
+        function init() {
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.y = 5.5;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xcebf82); 
+            scene.fog = new THREE.Fog(0xcebf82, 10, 55);
+
+            scene.add(new THREE.AmbientLight(0xffffee, 0.35));
+            const pointLight = new THREE.PointLight(0xfffff0, 1.2, 40);
+            pointLight.position.set(0, 2, 0); 
+            camera.add(pointLight); 
+            scene.add(camera);
+
+            // --- SPATIAL ENTITY SETUP ---
+            const textureLoader = new THREE.TextureLoader();
+            const entityTexture = textureLoader.load('entiti1.jpg');
+            const entityMaterial = new THREE.SpriteMaterial({ map: entityTexture, transparent: true });
+            entity = new THREE.Sprite(entityMaterial);
+            entity.scale.set(6, 9, 1); // Skala tinggi & lebar entity
+            entity.visible = false;
+            scene.add(entity);
+
+            controls = new PointerLockControls(camera, document.body);
+            const blocker = document.getElementById('blocker');
+            const instructions = document.getElementById('instructions');
+            const dashboard = document.getElementById('dashboard');
+
+            instructions.addEventListener('click', () => {
+                controls.lock();
+                initAudio();
+                if (!entity.visible && !isEntitySpawning) {
+                    respawnEntity();
+                }
+            });
+
+            controls.addEventListener('lock', () => {
+                blocker.style.display = 'none';
+                dashboard.style.display = 'block';
+                if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            });
+            controls.addEventListener('unlock', () => {
+                blocker.style.display = 'flex';
+                dashboard.style.display = 'none';
+                if(audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+            });
+            scene.add(controls.getObject());
+
+            document.addEventListener('keydown', (e) => {
+                switch(e.code) {
+                    case 'KeyW': moveForward = true; break;
+                    case 'KeyA': moveLeft = true; break;
+                    case 'KeyS': moveBackward = true; break;
+                    case 'KeyD': moveRight = true; break;
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': moveForward = false; break;
+                    case 'KeyA': moveLeft = false; break;
+                    case 'KeyS': moveBackward = false; break;
+                    case 'KeyD': moveRight = false; break;
+                }
+            });
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // --- SISTEM PEMUNCULAN ENTITY ---
+        function respawnEntity() {
+            isEntitySpawning = true;
+            
+            // Pilih sudut acak dari posisi pemain
+            const angle = Math.random() * Math.PI * 2;
+            // Jarak pemunculan (di batas jarak pandang kabut)
+            const distance = 30 + Math.random() * 15; 
+
+            const spawnX = camera.position.x + Math.cos(angle) * distance;
+            const spawnZ = camera.position.z + Math.sin(angle) * distance;
+
+            entity.position.set(spawnX, 4.5, spawnZ); // Y=4.5 agar berpijak di lantai
+            entity.visible = true;
+            isEntitySpawning = false;
+        }
+
+        function updateEntityLogic() {
+            if (!entity.visible || isEntitySpawning) return;
+
+            // Hitung jarak antara pemain dan entity
+            const dist = camera.position.distanceTo(entity.position);
+
+            // Jika pemain mendekat kurang dari 16 unit, entity menghilang
+            if (dist < 16) {
+                entity.visible = false;
+
+                // Muncul kembali secara acak setelah jeda 3-7 detik
+                const respawnDelay = 3000 + Math.random() * 4000;
+                setTimeout(() => {
+                    if (controls.isLocked) {
+                        respawnEntity();
+                    }
+                }, respawnDelay);
+            }
+        }
+
+        function randomSeed(x, z) {
+            let n = Math.sin(x * 34.56 + z * 89.12) * 10000;
+            return n - Math.floor(n);
+        }
+
+        function createWall(x, z, rotation) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE + THICKNESS, WALL_HEIGHT, THICKNESS), wallMat);
+            const wallTex = wallMat.map.clone(); wallTex.needsUpdate = true;
+            wallTex.repeat.set(CELL_SIZE / 5, WALL_HEIGHT / 5);
+            wall.material = new THREE.MeshLambertMaterial({ map: wallTex });
+            wall.position.set(x, WALL_HEIGHT / 2, z);
+            wall.rotation.y = rotation;
+            scene.add(wall);
+            walls.push(wall);
+        }
+
+        function generateChunk(cx, cz) {
+            const chunkKey = `${cx},${cz}`;
+            if (generatedChunks.has(chunkKey)) return;
+            generatedChunks.add(chunkKey);
+
+            const size = CHUNK_SIZE * CELL_SIZE;
+            const sx = cx * size, sz = cz * size;
+
+            const flTex = floorMat.map.clone(); flTex.needsUpdate = true; flTex.repeat.set(CHUNK_SIZE, CHUNK_SIZE);
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshLambertMaterial({ map: flTex }));
+            floor.rotation.x = -Math.PI / 2; floor.position.set(sx + size/2 - CELL_SIZE/2, 0, sz + size/2 - CELL_SIZE/2);
+            scene.add(floor);
+
+            const clTex = ceilingMat.map.clone(); clTex.needsUpdate = true; clTex.repeat.set(CHUNK_SIZE, CHUNK_SIZE);
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshLambertMaterial({ map: clTex }));
+            ceiling.rotation.x = Math.PI / 2; ceiling.position.set(sx + size/2 - CELL_SIZE/2, WALL_HEIGHT, sz + size/2 - CELL_SIZE/2);
+            scene.add(ceiling);
+
+            const isWideRoom = randomSeed(cx * 1.5, cz * 1.5) < 0.4; 
+
+            for (let i = 0; i < CHUNK_SIZE; i++) {
+                for (let j = 0; j < CHUNK_SIZE; j++) {
+                    const gx = cx * CHUNK_SIZE + i, gz = cz * CHUNK_SIZE + j;
+                    const px = gx * CELL_SIZE, pz = gz * CELL_SIZE;
+                    if (gx === 0 && gz === 0) continue; 
+
+                    if (isWideRoom) {
+                        if (randomSeed(gx, gz) < 0.05) createWall(px, pz + CELL_SIZE/2, 0); 
+                    } else {
+                        if (randomSeed(gx, gz) < 0.45) createWall(px, pz - CELL_SIZE/2, 0);
+                        if (randomSeed(gx + 0.1, gz + 0.1) < 0.45) createWall(px + CELL_SIZE/2, pz, Math.PI / 2);
+                    }
+                }
+            }
+        }
+
+        function updateWorld() {
+            const cx = Math.floor(camera.position.x / (CHUNK_SIZE * CELL_SIZE));
+            const cz = Math.floor(camera.position.z / (CHUNK_SIZE * CELL_SIZE));
+            for (let x = cx - RENDER_DISTANCE; x <= cx + RENDER_DISTANCE; x++) {
+                for (let z = cz - RENDER_DISTANCE; z <= cz + RENDER_DISTANCE; z++) generateChunk(x, z);
+            }
+        }
+
+        function checkCollision(targetPos) {
+            const playerBox = new THREE.Box3().setFromCenterAndSize(targetPos, new THREE.Vector3(3, 5, 3));
+            for (let i = 0; i < walls.length; i++) {
+                if (playerBox.intersectsBox(new THREE.Box3().setFromObject(walls[i]))) return true;
+            }
+            return false;
+        }
+
+        let bobbingTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                updateWorld(); 
+                updateEntityLogic(); // Menjalankan deteksi jarak Entity
+                
+                document.getElementById('posX').innerText = Math.floor(camera.position.x);
+                document.getElementById('posZ').innerText = Math.floor(camera.position.z);
+
+                const delta = (time - prevTime) / 1000;
+                velocity.x -= velocity.x * 8.0 * delta; velocity.z -= velocity.z * 8.0 * delta;
+                direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize(); 
+
+                const speed = 65.0; let isMoving = false;
+                if (moveForward || moveBackward) { velocity.z -= direction.z * speed * delta; isMoving = true; }
+                if (moveLeft || moveRight) { velocity.x -= direction.x * speed * delta; isMoving = true; }
+
+                const oldPos = camera.position.clone();
+                controls.moveRight(-velocity.x * delta); controls.moveForward(-velocity.z * delta);
+                
+                if (isMoving) {
+                    bobbingTime += delta * 8; camera.position.y = 5.5 + Math.sin(bobbingTime) * 0.25; 
+                } else {
+                    bobbingTime = 0; camera.position.y = THREE.MathUtils.lerp(camera.position.y, 5.5, 0.1);
+                }
+
+                if (checkCollision(camera.position)) {
+                    camera.position.x = oldPos.x; camera.position.z = oldPos.z;
+                    velocity.x = 0; velocity.z = 0;
+                }
+            }
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

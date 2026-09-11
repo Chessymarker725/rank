@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 37: The Poolrooms (Solid Edition) - PahmiGG Project</title>
+    <style>
+        body { 
+            margin: 0; overflow: hidden; 
+            font-family: 'Courier New', Courier, monospace; 
+            background-color: #000; user-select: none;
+        }
+        #blocker {
+            position: absolute; width: 100%; height: 100%;
+            background-color: rgba(5, 20, 30, 0.9);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: #e0f7fc; text-shadow: 0 0 10px rgba(0,255,255,0.5);
+            cursor: pointer; z-index: 10; text-align: center;
+        }
+        #instructions h1 { margin: 0; font-size: 38px; letter-spacing: 4px; color: #00ffff; }
+        #instructions p { font-size: 13px; color: #b0e0e6; line-height: 1.8; }
+        .key-badge {
+            background: rgba(0, 255, 255, 0.2); border: 1px solid #00ffff;
+            padding: 2px 6px; border-radius: 4px; color: #fff; font-weight: bold;
+        }
+        .credit { font-size: 12px; color: #688b94; margin-top: 25px; border-top: 1px solid #1a3d46; padding-top: 10px; }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 4px; height: 4px; background-color: rgba(255,255,255,0.8);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 5;
+        }
+
+        #dashboard {
+            position: absolute; top: 15px; left: 15px;
+            color: #00ffff; font-size: 12px;
+            background: rgba(4, 25, 35, 0.85); padding: 12px 16px;
+            border: 1px solid #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.2);
+            display: none; z-index: 5; pointer-events: none; line-height: 1.6;
+        }
+        #dashboard .dash-title { font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; }
+        
+        #waterOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 150, 200, 0.3); backdrop-filter: blur(1px);
+            pointer-events: none; z-index: 4; opacity: 0; transition: opacity 0.2s ease;
+        }
+
+        #zoomIndicator {
+            position: absolute; bottom: 20px; right: 20px;
+            color: #00ffff; font-size: 11px; background: rgba(0,0,0,0.6);
+            padding: 4px 8px; border: 1px solid #00ffff; display: none; z-index: 5;
+        }
+    </style>
+</head>
+<body>
+    <div id="waterOverlay"></div>
+
+    <div id="blocker">
+        <div id="instructions">
+            <h1>THE POOLROOMS</h1>
+            <p>Level 37 - Solid Geometry Edition</p>
+            <br>
+            <p>
+                <span class="key-badge">W A S D</span> Bergerak / Berenang<br>
+                <span class="key-badge">SPACE</span> Lompat / Berenang Naik<br>
+                <span class="key-badge">SHIFT</span> Berenang Turun<br>
+                <span class="key-badge">KLIK KANAN</span> / <span class="key-badge">C</span> Zoom Keker
+            </p>
+            <br>
+            <p style="color: #fff;">Klik di mana saja untuk memulai</p>
+            <div class="credit">A Game Experience by <strong>PahmiGG project</strong></div>
+        </div>
+    </div>
+    
+    <div id="dashboard">
+        <div class="dash-title">ENVIRONMENT_MONITOR</div>
+        <div>POS: X:<span id="posX">0</span> | Y:<span id="posY">0</span> | Z:<span id="posZ">0</span></div>
+        <div>DEPTH: <span id="depthStatus">Lantai Kering</span></div>
+        <div>STATE: <span id="stateStatus">Berjalan</span></div>
+    </div>
+
+    <div id="zoomIndicator">ZOOM 2.5X</div>
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        let camera, scene, renderer, controls;
+        let poolTileMat, deepTileMat, waterMat;
+        let floorBoxGeo, waterPlaneGeo;
+        
+        const generatedChunks = new Set();
+        
+        const CELL_SIZE = 8;
+        const WALL_HEIGHT = 8.0;
+        const CHUNK_SIZE = 6;
+        const RENDER_DIST = 2;
+        const WATER_LEVEL = 1.0; 
+        const DEEP_Y = -6.0; // Dasar kolam paling dalam
+        const PLAYER_HEIGHT = 3.2;
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let keyJump = false, keyCrouch = false, isZooming = false;
+        
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        let isGrounded = false;
+        let isInWater = false;
+        let isUnderwater = false;
+        let currentWaterDepth = 0; 
+        let lastChunkX = null, lastChunkZ = null;
+        let wasUnderwater = false;
+
+        function createTileTexture(tileSize = 32, tileColor = '#f5fafb', lineColor = '#9cbcc2') {
+            const cvs = document.createElement('canvas'); 
+            cvs.width = 128; cvs.height = 128;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = tileColor; ctx.fillRect(0, 0, 128, 128);
+            ctx.strokeStyle = lineColor; ctx.lineWidth = 2;
+            
+            for(let x = 0; x <= 128; x += tileSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 128); ctx.stroke();
+            }
+            for(let y = 0; y <= 128; y += tileSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke();
+            }
+            
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(2, 2);
+            return tex;
+        }
+
+        init();
+        animate();
+
+        function init() {
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, WATER_LEVEL + 0.4 + PLAYER_HEIGHT, 0);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xd0f0ff);
+            scene.fog = new THREE.FogExp2(0xd0f0ff, 0.02);
+
+            const tileTex = createTileTexture(32, '#f8ffff', '#9cbcc2');
+            poolTileMat = new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.1, metalness: 0.05 });
+
+            const deepTileTex = createTileTexture(32, '#cce6eb', '#709ba3');
+            deepTileMat = new THREE.MeshStandardMaterial({ map: deepTileTex, roughness: 0.1, metalness: 0.05 });
+
+            waterMat = new THREE.MeshStandardMaterial({
+                color: 0x00c4e6, transparent: true, opacity: 0.5, roughness: 0.05, metalness: 0.8
+            });
+
+            floorBoxGeo = new THREE.BoxGeometry(CELL_SIZE, 1, CELL_SIZE);
+            waterPlaneGeo = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
+
+            const ambientLight = new THREE.AmbientLight(0xe8f8ff, 1.0);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            mainLight.position.set(10, 30, 10);
+            scene.add(mainLight);
+
+            controls = new PointerLockControls(camera, document.body);
+            const blocker = document.getElementById('blocker');
+            const dashboard = document.getElementById('dashboard');
+
+            blocker.addEventListener('click', () => controls.lock());
+            controls.addEventListener('lock', () => {
+                blocker.style.display = 'none';
+                dashboard.style.display = 'block';
+            });
+            controls.addEventListener('unlock', () => {
+                blocker.style.display = 'flex';
+                dashboard.style.display = 'none';
+            });
+            scene.add(controls.getObject());
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', (e) => { if (e.button === 2) setZoom(true); });
+            document.addEventListener('mouseup', (e) => { if (e.button === 2) setZoom(false); });
+            document.addEventListener('contextmenu', e => e.preventDefault());
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setZoom(zoomIn) {
+            isZooming = zoomIn;
+            camera.fov = isZooming ? 32 : 75;
+            camera.updateProjectionMatrix();
+            document.getElementById('zoomIndicator').style.display = isZooming ? 'block' : 'none';
+        }
+
+        function onKeyDown(e) {
+            switch(e.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': keyJump = true; break;
+                case 'ShiftLeft': case 'ShiftRight': keyCrouch = true; break;
+                case 'KeyC': setZoom(!isZooming); break;
+            }
+        }
+
+        function onKeyUp(e) {
+            switch(e.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'Space': keyJump = false; break;
+                case 'ShiftLeft': case 'ShiftRight': keyCrouch = false; break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function pseudoRandom(x, z) {
+            let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+            return n - Math.floor(n);
+        }
+
+        function getCellType(gx, gz) {
+            if (Math.abs(gx) <= 1 && Math.abs(gz) <= 1) return 1; // Start di Lantai Kering
+            let val = pseudoRandom(gx, gz);
+            if (val < 0.22) return 2; // Kolam Dalam
+            if (val < 0.65) return 0; // Kolam Dangkal
+            if (val < 0.82) return 1; // Lantai Kering
+            return 3;                 // Dinding
+        }
+
+        function generateChunk(cx, cz) {
+            const key = `${cx},${cz}`;
+            if (generatedChunks.has(key)) return;
+            generatedChunks.add(key);
+
+            const startX = cx * CHUNK_SIZE;
+            const startZ = cz * CHUNK_SIZE;
+
+            for (let i = 0; i < CHUNK_SIZE; i++) {
+                for (let j = 0; j < CHUNK_SIZE; j++) {
+                    const gx = startX + i;
+                    const gz = startZ + j;
+                    const type = getCellType(gx, gz);
+                    const posX = gx * CELL_SIZE;
+                    const posZ = gz * CELL_SIZE;
+
+                    // Plafon atas
+                    const ceiling = new THREE.Mesh(floorBoxGeo, poolTileMat);
+                    ceiling.position.set(posX, WALL_HEIGHT, posZ);
+                    scene.add(ceiling);
+
+                    if (type === 3) {
+                        // Dinding Penuh (Menjulur dari dasar terdalam ke plafon)
+                        const height = WALL_HEIGHT - DEEP_Y;
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, height, CELL_SIZE), poolTileMat);
+                        wall.position.set(posX, DEEP_Y + height / 2, posZ);
+                        scene.add(wall);
+                    } 
+                    else if (type === 1) {
+                        // Lantai Kering Solid (Dari dasar DEEP_Y ke atas air)
+                        const topY = WATER_LEVEL + 0.4;
+                        const height = topY - DEEP_Y;
+                        const floor = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, height, CELL_SIZE), poolTileMat);
+                        floor.position.set(posX, DEEP_Y + height / 2, posZ);
+                        scene.add(floor);
+                    } 
+                    else if (type === 0) {
+                        // Kolam Dangkal Solid (Dari dasar DEEP_Y ke permukaan Y=0)
+                        const topY = 0.0;
+                        const height = topY - DEEP_Y;
+                        const floor = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, height, CELL_SIZE), poolTileMat);
+                        floor.position.set(posX, DEEP_Y + height / 2, posZ);
+                        scene.add(floor);
+
+                        const water = new THREE.Mesh(waterPlaneGeo, waterMat);
+                        water.rotation.x = -Math.PI / 2;
+                        water.position.set(posX, WATER_LEVEL, posZ);
+                        scene.add(water);
+                    } 
+                    else if (type === 2) {
+                        // Kolam Dalam (Dasar di Y = -6.0)
+                        const floor = new THREE.Mesh(floorBoxGeo, deepTileMat);
+                        floor.position.set(posX, DEEP_Y - 0.5, posZ);
+                        scene.add(floor);
+
+                        const water = new THREE.Mesh(waterPlaneGeo, waterMat);
+                        water.rotation.x = -Math.PI / 2;
+                        water.position.set(posX, WATER_LEVEL, posZ);
+                        scene.add(water);
+                    }
+                }
+            }
+        }
+
+        function updateChunksIfNeeded() {
+            const cx = Math.floor(camera.position.x / (CHUNK_SIZE * CELL_SIZE));
+            const cz = Math.floor(camera.position.z / (CHUNK_SIZE * CELL_SIZE));
+
+            if (cx !== lastChunkX || cz !== lastChunkZ) {
+                lastChunkX = cx; lastChunkZ = cz;
+                for (let x = cx - RENDER_DIST; x <= cx + RENDER_DIST; x++) {
+                    for (let z = cz - RENDER_DIST; z <= cz + RENDER_DIST; z++) {
+                        generateChunk(x, z);
+                    }
+                }
+            }
+        }
+
+        function getTerrainFloorAt(x, z) {
+            const gx = Math.round(x / CELL_SIZE);
+            const gz = Math.round(z / CELL_SIZE);
+            const type = getCellType(gx, gz);
+
+            if (type === 3) return WALL_HEIGHT; 
+            if (type === 1) return WATER_LEVEL + 0.4; // 1.4
+            if (type === 0) return 0.0; 
+            if (type === 2) return DEEP_Y; // -6.0
+            return 0;
+        }
+
+        function isPointInsideWall(x, z) {
+            const radius = 0.5;
+            const points = [
+                { x: x + radius, z: z + radius }, { x: x - radius, z: z + radius },
+                { x: x + radius, z: z - radius }, { x: x - radius, z: z - radius }
+            ];
+            for (let p of points) {
+                const gx = Math.round(p.x / CELL_SIZE);
+                const gz = Math.round(p.z / CELL_SIZE);
+                if (getCellType(gx, gz) === 3) return true;
+            }
+            return false;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.05);
+            prevTime = time;
+
+            if (controls.isLocked) {
+                updateChunksIfNeeded();
+
+                const playerPos = camera.position;
+                const feetY = playerPos.y - PLAYER_HEIGHT;
+                const floorY = getTerrainFloorAt(playerPos.x, playerPos.z);
+
+                const waterDepth = WATER_LEVEL - feetY;
+                isInWater = waterDepth > 0;
+                isUnderwater = playerPos.y < WATER_LEVEL;
+
+                if (isUnderwater !== wasUnderwater) {
+                    wasUnderwater = isUnderwater;
+                    document.getElementById('waterOverlay').style.opacity = isUnderwater ? '1' : '0';
+                    scene.fog.color.setHex(isUnderwater ? 0x007799 : 0xd0f0ff);
+                    scene.fog.density = isUnderwater ? 0.07 : 0.02;
+                }
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (isInWater && waterDepth > 1.8) {
+                    currentWaterDepth = 2;
+
+                    velocity.x -= velocity.x * 3.5 * delta;
+                    velocity.z -= velocity.z * 3.5 * delta;
+                    velocity.y -= velocity.y * 2.5 * delta;
+
+                    const swimSpeed = 28.0;
+                    if (moveForward || moveBackward) velocity.z -= direction.z * swimSpeed * delta;
+                    if (moveLeft || moveRight) velocity.x -= direction.x * swimSpeed * delta;
+
+                    if (keyJump) velocity.y += 24.0 * delta;
+                    if (keyCrouch) velocity.y -= 24.0 * delta;
+
+                    velocity.y += 2.5 * delta;
+                } 
+                else {
+                    currentWaterDepth = waterDepth > 0 ? 1 : 0;
+
+                    velocity.x -= velocity.x * 8.0 * delta;
+                    velocity.z -= velocity.z * 8.0 * delta;
+                    velocity.y -= 30.0 * delta;
+
+                    const walkSpeed = (currentWaterDepth === 1) ? 40.0 : 60.0;
+                    if (moveForward || moveBackward) velocity.z -= direction.z * walkSpeed * delta;
+                    if (moveLeft || moveRight) velocity.x -= direction.x * walkSpeed * delta;
+
+                    if (isGrounded && keyJump) {
+                        velocity.y = 11.0;
+                        isGrounded = false;
+                    }
+                }
+
+                const moveVector = new THREE.Vector3();
+                const forwardDir = new THREE.Vector3();
+                camera.getWorldDirection(forwardDir);
+                forwardDir.y = 0; forwardDir.normalize();
+
+                const sideDir = new THREE.Vector3().crossVectors(camera.up, forwardDir).negate().normalize();
+
+                moveVector.addScaledVector(forwardDir, -velocity.z * delta);
+                moveVector.addScaledVector(sideDir, velocity.x * delta);
+
+                const nextX = playerPos.x + moveVector.x;
+                if (!isPointInsideWall(nextX, playerPos.z)) {
+                    playerPos.x = nextX;
+                } else {
+                    velocity.x = 0;
+                }
+
+                const nextZ = playerPos.z + moveVector.z;
+                if (!isPointInsideWall(playerPos.x, nextZ)) {
+                    playerPos.z = nextZ;
+                } else {
+                    velocity.z = 0;
+                }
+
+                playerPos.y += velocity.y * delta;
+
+                if (playerPos.y - PLAYER_HEIGHT <= floorY) {
+                    velocity.y = 0;
+                    playerPos.y = floorY + PLAYER_HEIGHT;
+                    isGrounded = true;
+                } else {
+                    isGrounded = false;
+                }
+
+                if (playerPos.y > WALL_HEIGHT - 0.8) {
+                    playerPos.y = WALL_HEIGHT - 0.8;
+                    velocity.y = 0;
+                }
+
+                document.getElementById('posX').innerText = Math.floor(playerPos.x);
+                document.getElementById('posY').innerText = playerPos.y.toFixed(1);
+                document.getElementById('posZ').innerText = Math.floor(playerPos.z);
+
+                const depthEl = document.getElementById('depthStatus');
+                const stateEl = document.getElementById('stateStatus');
+
+                if (currentWaterDepth === 0) {
+                    depthEl.innerText = "Lantai Kering"; depthEl.style.color = "#55ff55";
+                } else if (currentWaterDepth === 1) {
+                    depthEl.innerText = "Air Dangkal"; depthEl.style.color = "#00ffff";
+                } else {
+                    depthEl.innerText = "Air Dalam (Kolam)"; depthEl.style.color = "#ff55ff";
+                }
+
+                if (isUnderwater) {
+                    stateEl.innerText = "MENYELAM"; stateEl.style.color = "#0088ff";
+                } else if (isInWater && currentWaterDepth === 2) {
+                    stateEl.innerText = "BERENANG"; stateEl.style.color = "#00ffff";
+                } else if (!isGrounded) {
+                    stateEl.innerText = "MELOMPAT"; stateEl.style.color = "#ffff55";
+                } else {
+                    stateEl.innerText = "BERJALAN"; stateEl.style.color = "#55ff55";
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
